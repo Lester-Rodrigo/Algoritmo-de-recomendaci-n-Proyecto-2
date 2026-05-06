@@ -26,7 +26,7 @@ class GrafoDB:
                 lambda tx: tx.run("""
                     MATCH (a:Vertex {name: $name1}),
                           (b:Vertex {name: $name2})
-                    MERGE (a)-[:CONNECTED]->(b)
+                    MERGE (a)-[:SIMILAR]-(b)
                 """, name1=vex1, name2=vex2)
             )
             
@@ -58,7 +58,7 @@ class GrafoDB:
                 lambda tx: [
                     f"{user_name} might also like {r['vertex_name']} (price: {r['price']})"
                     for r in tx.run("""
-                        MATCH (u:User {name: $user_name})-[:INTERESTED_IN]->(v1:Vertex)-[:CONNECTED]->(v2:Vertex)
+                        MATCH (u:User {name: $user_name})-[:INTERESTED_IN]-(v1:Vertex)-[:SIMILAR]->(v2:Vertex)
                         WHERE NOT (u)-[:INTERESTED_IN]->(v2)
                         RETURN DISTINCT v2.name AS vertex_name, v2.price AS price
                     """, user_name=user_name)
@@ -71,7 +71,7 @@ class GrafoDB:
                 lambda tx: [
                     f"{vertex_name} is connected to {r['connected_vertex']} (price: {r['price']})"
                     for r in tx.run("""
-                        MATCH (v1:Vertex {name: $vertex_name})-[:CONNECTED]->(v2:Vertex)
+                        MATCH (v1:Vertex {name: $vertex_name})-[:SIMILAR]-(v2:Vertex)
                         RETURN v2.name AS connected_vertex, v2.price AS price
                     """, vertex_name=vertex_name)
                 ]
