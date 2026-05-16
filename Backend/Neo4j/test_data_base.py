@@ -1,4 +1,4 @@
-from data_base import GrafoDB
+from Backend.Neo4j.data_base import GrafoDB
 
 Users = ["Alice", "Bob", "Charlie"]
 Vertices = ["Halo", 700, "God of War", 650, "Plants vs. Zombies", 300, 
