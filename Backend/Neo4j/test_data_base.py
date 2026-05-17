@@ -1,8 +1,8 @@
-from Backend.Neo4j.data_base import GrafoDB
+from data_base import GrafoDB
 from dotenv import load_dotenv
 import os
 
-Users = ["Alice", "Bob", "Charlie"]
+Users = ["Alice", "Bob", "Charlie", "David", "Eve"]
 Vertices = ["Halo", 700, "God of War", 650, "Plants vs. Zombies", 300, 
             "Call of Duty", 800, "Devil May Cry", 400]
 
@@ -33,7 +33,8 @@ def test_user_game_db():
     db.create_user_vertex_edge("Alice", "God of War")
     db.create_user_vertex_edge("Bob", "Call of Duty")
     db.create_user_vertex_edge("Charlie", "Plants vs. Zombies")
-
+    db.create_user_vertex_edge("David", "Call of Duty")
+    db.create_user_vertex_edge("Eve", "Devil May Cry")  
     # Obtener intereses de Alice
     intereses_alice = db.get_user_interests("Alice")
     assert set(intereses_alice) == {
@@ -44,7 +45,13 @@ def test_user_game_db():
     db.close()
     
 def test_game_game_db():
-    db = GrafoDB("bolt://localhost:7687", "neo4j", "Vertex59")
+    load_dotenv()
+
+    db = GrafoDB(
+        os.getenv("NEO4J_URI"),
+        os.getenv("NEO4J_USER"),
+        os.getenv("NEO4J_PASSWORD")
+    )
 
     # Limpiar base de datos antes del test
     with db.driver.session() as session:
@@ -67,6 +74,8 @@ def test_game_game_db():
     db.create_user_vertex_edge("Alice", "God of War")
     db.create_user_vertex_edge("Bob", "Call of Duty")
     db.create_user_vertex_edge("Charlie", "Plants vs. Zombies")
+    db.create_user_vertex_edge("David", "Call of Duty")
+    db.create_user_vertex_edge("Eve", "Devil May Cry")
     
     # Obtener recomendaciones para Alice
     recomendaciones_alice = db.get_possible_recommendations("Alice")
