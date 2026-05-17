@@ -1,11 +1,20 @@
 from Backend.Neo4j.data_base import GrafoDB
+from dotenv import load_dotenv
+import os
 
 Users = ["Alice", "Bob", "Charlie"]
 Vertices = ["Halo", 700, "God of War", 650, "Plants vs. Zombies", 300, 
             "Call of Duty", 800, "Devil May Cry", 400]
 
 def test_user_game_db():
-    db = GrafoDB("bolt://localhost:7687", "neo4j", "Vertex59")
+
+    load_dotenv()
+
+    db = GrafoDB(
+        os.getenv("NEO4J_URI"),
+        os.getenv("NEO4J_USER"),
+        os.getenv("NEO4J_PASSWORD")
+    )
 
     # Limpiar base de datos antes del test
     with db.driver.session() as session:
