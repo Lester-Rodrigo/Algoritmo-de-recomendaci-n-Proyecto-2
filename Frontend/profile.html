@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echoes Profile</title>
+
+    <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+
+<div class="layout">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <img
+            src="imagenes/logo.png"
+            class="sidebar-logo"
+            alt="Echoes Logo"
+        >
+
+        <nav>
+
+            <a href="home.html">Home</a>
+            <a href="#">Discover</a>
+            <a href="#">Recommendations</a>
+            <a href="#">Browse</a>
+            <a href="#">Wishlist</a>
+            <a href="profile.html">Profile</a>
+
+        </nav>
+
+    </aside>
+
+    <!-- PROFILE -->
+
+    <main class="profile-container">
+
+        <div class="profile-header">
+
+            <div class="banner" id="banner">
+                <input
+                    type="file"
+                    id="bannerUpload"
+                    accept="image/*"
+                    hidden
+                >
+            </div>
+
+            <div class="avatar-wrapper">
+
+                <img
+                    src="imagenes/avatar.png"
+                    class="avatar"
+                    id="avatar"
+                >
+
+                <input
+                    type="file"
+                    id="avatarUpload"
+                    accept="image/*"
+                    hidden
+                >
+
+            </div>
+
+            <div class="user-info">
+
+                <h2>Nombre de perfil</h2>
+                <p>Bio</p>
+
+            </div>
+
+            <div class="stats">
+
+                <div>
+                    <h2>89</h2>
+                    <span>Games Rated</span>
+                </div>
+
+                <div>
+                    <h2>32</h2>
+                    <span>Likes</span>
+                </div>
+
+                <div>
+                    <h2>12</h2>
+                    <span>Wishlist</span>
+                </div>
+
+                <div>
+                    <h2>24</h2>
+                    <span>Level</span>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="tabs">
+
+            <button class="active">Overview</button>
+            <button>Activity</button>
+            <button>Wishlist</button>
+            <button>Likes</button>
+            <button>Stats</button>
+
+        </div>
+
+        <div class="content">
+
+            <section>
+
+                <h3>Favorite Genres</h3>
+
+                <div class="genres">
+
+                    <span>RPG</span>
+                    <span>Soulslike</span>
+                    <span>Adventure</span>
+                    <span>Indie</span>
+
+                </div>
+
+            </section>
+
+            <section>
+
+                <h3>Favorite Games</h3>
+
+                <div class="games-grid">
+
+                    <div class="game-card"></div>
+                    <div class="game-card"></div>
+                    <div class="game-card"></div>
+                    <div class="game-card"></div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </main>
+
+</div>
+
+<script src="profile.js"></script>
+
+</body>
+</html>
