@@ -11,7 +11,6 @@ class SteamGraphDB:
     def close(self):
         self.driver.close()
 
-    
     def create_constraints(self):
         with self.driver.session() as session:
             session.run("""
@@ -35,8 +34,13 @@ class SteamGraphDB:
                 FOR (d:Developer) REQUIRE d.name IS UNIQUE
             """)
 
-
+    
     def create_game(self, row):
+        try:
+            price = float(row["price"])
+        except (ValueError, TypeError):
+            price = 0.0
+
         with self.driver.session() as session:
             session.execute_write(
                 lambda tx: tx.run("""
@@ -49,9 +53,9 @@ class SteamGraphDB:
                         g.average_playtime = $average_playtime
                 """,
                 appid=int(row["appid"]),
-                name=row["name"],
-                release_date=row["release_date"],
-                price=float(row["price"]),
+                name=str(row["name"]),
+                release_date=str(row["release_date"]),
+                price=price,
                 positive_ratings=int(row["positive_ratings"]),
                 negative_ratings=int(row["negative_ratings"]),
                 average_playtime=int(row["average_playtime"]),
@@ -61,7 +65,7 @@ class SteamGraphDB:
     def add_genres(self, appid, genres):
         if pd.isna(genres):
             return
-        genre_list = [g.strip() for g in str(genres).split(";")]
+        genre_list = [g.strip() for g in str(genres).split(";") if g.strip()]
         with self.driver.session() as session:
             for genre in genre_list:
                 session.execute_write(
@@ -72,11 +76,10 @@ class SteamGraphDB:
                     """, appid=int(appid), genre=g)
                 )
 
-    
     def add_tags(self, appid, tags):
         if pd.isna(tags):
             return
-        tag_list = [t.strip() for t in str(tags).split(";")]
+        tag_list = [t.strip() for t in str(tags).split(";") if t.strip()]
         with self.driver.session() as session:
             for tag in tag_list:
                 session.execute_write(
@@ -96,7 +99,7 @@ class SteamGraphDB:
                     MATCH (game:Game {appid: $appid})
                     MERGE (d:Developer {name: $developer})
                     MERGE (game)-[:DEVELOPED_BY]->(d)
-                """, appid=int(appid), developer=developer)
+                """, appid=int(appid), developer=str(developer))
             )
 
     def get_all_games(self, limit: int = 100, offset: int = 0):
@@ -145,7 +148,8 @@ class SteamGraphDB:
             """, query=query, limit=limit)
             return [dict(r) for r in result]
 
-    # users nodo de grafo para cada usuario registrado en la base de datos 
+    # usuarios
+    #sql lite se encarga de la autenticacion, pero el grafo necesita saber que usuarios existen para crear las relaciones RATED
 
     def create_user(self, username: str):
         with self.driver.session() as session:
@@ -164,7 +168,11 @@ class SteamGraphDB:
             ).single()
             return result is not None
 
-    # ratings
+
+    
+    #cuando un usuario califica un juego, se crea una relación RATED en el grafo:
+    #   (:User {name})-[:RATED {score}]->(:Game {appid})
+    # de aqui se sacan las recomendaciones content-based y colaborativas
 
     def add_user_rating(self, username: str, appid: int, score: float):
         with self.driver.session() as session:
@@ -195,42 +203,41 @@ class SteamGraphDB:
                 """, username=username, appid=int(appid))
             )
 
-    # import csvv
 
-    def import_games_csv(self, filepath: str):
-        df = pd.read_csv(filepath)
+    def import_games_csv(self, filepath: str, limit: int = 1000): 
+        df = pd.read_csv(filepath).head(limit)
         total = len(df)
         for i, (_, row) in enumerate(df.iterrows(), 1):
             self.create_game(row)
             self.add_genres(row["appid"], row.get("genres"))
+            # steamspy_tags columna usada para Jaccard 
             self.add_tags(row["appid"], row.get("steamspy_tags"))
             self.add_developer(row["appid"], row.get("developer"))
             if i % 100 == 0:
-                print(f"  Imported {i}/{total} games…")
+                print(f"  Imported {i}/{total} games...")
         print(f"  Done — {total} games imported.")
 
-    # jaccard
+    # Compara cada oar de juegos por sus tags  
+    # If overlap >= 0.3, creates: (:Game)-[:SIMILAR {score}]->(:Game)
 
     def calculate_jaccard_similarity(self):
         with self.driver.session() as session:
-            games = session.run("MATCH (g:Game) RETURN g.appid AS appid")
-            game_ids = [r["appid"] for r in games]
-            total = len(list(combinations(game_ids, 2)))
-            processed = 0
+            game_ids = [r["appid"] for r in
+                        session.run("MATCH (g:Game) RETURN g.appid AS appid")]
+            pairs = list(combinations(game_ids, 2))
+            total = len(pairs)
 
-            for g1, g2 in combinations(game_ids, 2):
-                
+            for i, (g1, g2) in enumerate(pairs, 1):
                 result = session.run("""
                     MATCH (game1:Game {appid: $g1})-[:HAS_TAG]->(t1:Tag)
-                    WITH game1, collect(t1.name) AS tags1
+                    WITH collect(t1.name) AS tags1
                     MATCH (game2:Game {appid: $g2})-[:HAS_TAG]->(t2:Tag)
                     WITH tags1, collect(t2.name) AS tags2
                     RETURN tags1, tags2
                 """, g1=g1, g2=g2).single()
 
-                processed += 1
-                if processed % 500 == 0:
-                    print(f"  Jaccard: {processed}/{total} pairs…")
+                if i % 500 == 0:
+                    print(f"  Jaccard: {i}/{total} pairs...")
 
                 if result is None:
                     continue
@@ -240,9 +247,7 @@ class SteamGraphDB:
                 if not tags1 or not tags2:
                     continue
 
-                intersection = len(tags1 & tags2)
-                union = len(tags1 | tags2)
-                score = intersection / union
+                score = len(tags1 & tags2) / len(tags1 | tags2)
 
                 if score >= 0.3:
                     session.run("""
@@ -252,52 +257,54 @@ class SteamGraphDB:
                         SET s.score = $score
                     """, g1=g1, g2=g2, score=score)
 
-            print(f"  Jaccard similarity done — {processed} pairs evaluated.")
+            print(f"  Jaccard done — {total} pairs evaluated.")
 
-    # recomendacione
+#recomendaciones ////////////////////////////////////////////////////////////////////////////
 
     def content_based_recommendations(self, username: str):
+
         with self.driver.session() as session:
             result = session.run("""
-                MATCH (u:User {name: $username})-[r:RATED]->(g1:Game)
+                MATCH (u:User {name: $username})-[:RATED]->(g1:Game)
                 MATCH (g1)-[s:SIMILAR]->(g2:Game)
                 WHERE NOT (u)-[:RATED]->(g2)
-                RETURN g2.appid    AS appid,
-                       g2.name     AS game,
-                       g2.price    AS price,
-                       AVG(s.score) AS similarity
+                RETURN g2.appid      AS appid,
+                       g2.name       AS game,
+                       g2.price      AS price,
+                       AVG(s.score)  AS similarity
                 ORDER BY similarity DESC
                 LIMIT 10
             """, username=username)
             return [dict(r) for r in result]
 
     def collaborative_filtering(self, username: str):
+
         with self.driver.session() as session:
             result = session.run("""
                 MATCH (u1:User {name: $username})-[:RATED]->(g:Game)<-[:RATED]-(u2:User)
                 WHERE u1 <> u2
                 MATCH (u2)-[:RATED]->(rec:Game)
                 WHERE NOT (u1)-[:RATED]->(rec)
-                RETURN rec.appid AS appid,
-                       rec.name  AS game,
-                       rec.price AS price,
-                       COUNT(*)  AS score
+                RETURN rec.appid  AS appid,
+                       rec.name   AS game,
+                       rec.price  AS price,
+                       COUNT(*)   AS score
                 ORDER BY score DESC
                 LIMIT 10
             """, username=username)
             return [dict(r) for r in result]
 
     def hybrid_recommendations(self, username: str):
-        """Merge content-based and collaborative results, deduplicating by appid."""
-        cb   = {r["appid"]: {**r, "source": "content"}
-                for r in self.content_based_recommendations(username)}
+#deduplica por id
+        cb     = {r["appid"]: {**r, "source": "content"}
+                  for r in self.content_based_recommendations(username)}
         collab = {r["appid"]: {**r, "source": "collaborative"}
                   for r in self.collaborative_filtering(username)}
 
-        merged = {}
-        for appid, item in {**collab, **cb}.items():   
-            merged[appid] = item
-
-        return sorted(merged.values(),
-                      key=lambda x: x.get("similarity", 0) + x.get("score", 0),
-                      reverse=True)[:10]
+        # content-based wgana si hay conflicto. se suman las puntuaciones para ordenar 
+        merged = {**collab, **cb}
+        return sorted(
+            merged.values(),
+            key=lambda x: x.get("similarity", 0) + x.get("score", 0),
+            reverse=True
+        )[:10]
