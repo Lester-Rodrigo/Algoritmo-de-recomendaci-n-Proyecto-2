@@ -9,7 +9,35 @@
 </head>
 <body>
 
-    <div class="profile-container">
+<div class="layout">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <img
+            src="imagenes/logo.png"
+            class="sidebar-logo"
+            alt="Echoes Logo"
+        >
+
+        <nav>
+
+            <a href="home.html">Home</a>
+            <a href="#">Discover</a>
+            <a href="#">Recommendations</a>
+            <a href="#">Trending</a>
+            <a href="#">Browse</a>
+            <a href="#">Wishlist</a>
+            <a href="profile.html">Profile</a>
+
+        </nav>
+
+    </aside>
+
+    <!-- PROFILE -->
+
+    <main class="profile-container">
 
         <div class="profile-header">
 
@@ -18,27 +46,32 @@
                     type="file"
                     id="bannerUpload"
                     accept="image/*"
-                    hidden>
+                    hidden
+                >
             </div>
 
             <div class="avatar-wrapper">
 
                 <img
-                    src="images/avatar.png"
+                    src="imagenes/avatar.png"
                     class="avatar"
-                    id="avatar">
+                    id="avatar"
+                >
 
                 <input
                     type="file"
                     id="avatarUpload"
                     accept="image/*"
-                    hidden>
+                    hidden
+                >
 
             </div>
 
             <div class="user-info">
-                <h2>Nombre de perfil</h2>
-                <p>Bio</p>
+
+                <h2>UVGenio</h2>
+                <p>Play Beyond</p>
+
             </div>
 
             <div class="stats">
@@ -111,9 +144,11 @@
 
         </div>
 
-    </div>
+    </main>
 
-    <script src="profile.js"></script>
+</div>
+
+<script src="profile.js"></script>
 
 </body>
 </html>
