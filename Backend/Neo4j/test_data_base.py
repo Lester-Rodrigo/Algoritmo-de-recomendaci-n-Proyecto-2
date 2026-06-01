@@ -32,9 +32,10 @@ def test_user_game_db():
     db.create_user_vertex_edge("Alice", "Halo")
     db.create_user_vertex_edge("Alice", "God of War")
     db.create_user_vertex_edge("Bob", "Call of Duty")
-    db.create_user_vertex_edge("Charlie", "Plants vs. Zombies")
+    db.create_user_vertex_edge("Charlie", "Plants vs. Zombies") 
     db.create_user_vertex_edge("David", "Call of Duty")
     db.create_user_vertex_edge("Eve", "Devil May Cry")  
+    
     # Obtener intereses de Alice
     intereses_alice = db.get_user_interests("Alice")
     assert set(intereses_alice) == {
@@ -76,7 +77,7 @@ def test_game_game_db():
     db.create_user_vertex_edge("Charlie", "Plants vs. Zombies")
     db.create_user_vertex_edge("David", "Call of Duty")
     db.create_user_vertex_edge("Eve", "Devil May Cry")
-    
+
     # Obtener recomendaciones para Alice
     recomendaciones_alice = db.get_possible_recommendations("Alice")
     assert set(recomendaciones_alice) == {
