@@ -107,6 +107,7 @@ class LibraryBody(BaseModel):
 class WishlistBody(BaseModel):
     username: str
     appid: int
+    
 #Autenticacion ///////////////////////////////
 @app.post("/api/register")
 def register(body: RegisterBody):
