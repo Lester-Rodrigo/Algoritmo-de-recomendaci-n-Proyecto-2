@@ -220,70 +220,44 @@ class SteamGraphDB:
     # Compara cada oar de juegos por sus tags  
     # If overlap >= 0.3, creates: (:Game)-[:SIMILAR {score}]->(:Game)
 
-    def calculate_similarity(self):
+    def calculate_jaccard_similarity(self):
         with self.driver.session() as session:
-            rows = session.run("""
-                MATCH (g:Game)
-                OPTIONAL MATCH (g)-[:HAS_TAG]->(t:Tag)
-                OPTIONAL MATCH (g)-[:HAS_GENRE]->(ge:Genre)
-                OPTIONAL MATCH (g)-[:DEVELOPED_BY]->(d:Developer)
-                RETURN g.appid          AS appid,
-                    g.average_playtime AS playtime,
-                    g.price           AS price,
-                    collect(DISTINCT t.name)  AS tags,
-                    collect(DISTINCT ge.name) AS genres,
-                    collect(DISTINCT d.name)  AS developers
-            """)
-            games = {r["appid"]: dict(r) for r in rows}
+            game_ids = [r["appid"] for r in
+                        session.run("MATCH (g:Game) RETURN g.appid AS appid")]
+            pairs = list(combinations(game_ids, 2))
+            total = len(pairs)
 
-        pairs = list(combinations(games.keys(), 2))
-        total = len(pairs)
-        similar = 0
+            for i, (g1, g2) in enumerate(pairs, 1):
+                result = session.run("""
+                    MATCH (game1:Game {appid: $g1})-[:HAS_TAG]->(t1:Tag)
+                    WITH collect(t1.name) AS tags1
+                    MATCH (game2:Game {appid: $g2})-[:HAS_TAG]->(t2:Tag)
+                    WITH tags1, collect(t2.name) AS tags2
+                    RETURN tags1, tags2
+                """, g1=g1, g2=g2).single()
 
-        with self.driver.session() as session:
-            for i, (id1, id2) in enumerate(pairs, 1):
-                g1, g2 = games[id1], games[id2]
+                if i % 500 == 0:
+                    print(f"  Jaccard: {i}/{total} pairs...")
 
-                tags1, tags2 = set(g1["tags"]), set(g2["tags"])
-                if tags1 and tags2:
-                    tag_score = len(tags1 & tags2) / len(tags1 | tags2)
-                else:
-                    tag_score = 0.0
+                if result is None:
+                    continue
 
-                genres1, genres2 = set(g1["genres"]), set(g2["genres"])
-                if genres1 and genres2:
-                    genre_score = len(genres1 & genres2) / len(genres1 | genres2)
-                else:
-                    genre_score = 0.0
+                tags1 = set(result["tags1"])
+                tags2 = set(result["tags2"])
+                if not tags1 or not tags2:
+                    continue
 
-                dev_score = 1.0 if set(g1["developers"]) & set(g2["developers"]) else 0.0
+                score = len(tags1 & tags2) / len(tags1 | tags2)
 
-                try:
-                    price_diff = abs(float(g1["price"]) - float(g2["price"]))
-                    price_score = max(0.0, 1.0 - price_diff / 60.0)
-                except (TypeError, ValueError):
-                    price_score = 0.0
-
-                score = (
-                    tag_score    * 0.5 +
-                    genre_score  * 0.3 +
-                    dev_score    * 0.1 +
-                    price_score  * 0.1
-                )
-
-                if score >= 0.2:
-                    similar += 1
+                if score >= 0.3:
                     session.run("""
                         MATCH (g1:Game {appid: $g1})
                         MATCH (g2:Game {appid: $g2})
                         MERGE (g1)-[s:SIMILAR]->(g2)
                         SET s.score = $score
-                    """, g1=id1, g2=id2, score=score)
+                    """, g1=g1, g2=g2, score=score)
 
-                if i % 500 == 0:
-                    print(f"  Similarity: {i}/{total} pairs ({similar} similar edges)")
-
-        print(f"  Done — {total} pairs, {similar} similar edges created.")
+            print(f"  Jaccard done — {total} pairs evaluated.")
 
 #recomendaciones ////////////////////////////////////////////////////////////////////////////
 
