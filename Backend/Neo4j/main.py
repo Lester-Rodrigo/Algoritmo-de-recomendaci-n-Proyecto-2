@@ -104,6 +104,9 @@ class LibraryBody(BaseModel):
     username: str
     appid: int
 
+class WishlistBody(BaseModel):
+    username: str
+    appid: int
 #Autenticacion ///////////////////////////////
 @app.post("/api/register")
 def register(body: RegisterBody):
@@ -255,6 +258,32 @@ def hybrid_recs(username: str):
     get_user(username)
     return graph.hybrid_recommendations(username)
 
+@app.post("/api/wishlist/add")
+def wishlist_add(body: WishlistBody):
+
+    graph.add_to_wishlist(
+        body.username,
+        body.appid
+    )
+
+    return {"ok": True}
+
+@app.post("/api/wishlist/remove")
+def wishlist_remove(body: WishlistBody):
+
+    graph.remove_from_wishlist(
+        body.username,
+        body.appid
+    )
+
+    return {"ok": True}
+
+@app.get("/api/wishlist/{username}")
+def wishlist(username: str):
+
+    return graph.get_wishlist(
+        username
+    )
 
 if __name__ == "__main__":
     import uvicorn

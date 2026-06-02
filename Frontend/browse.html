@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Browse Games</title>
+    <link rel="stylesheet" href="browse.css">
+</head>
+
+<body>
+
+<header>
+
+    <h1>Game Browser</h1>
+
+    <nav>
+
+        <a href="library.html">
+            Biblioteca
+        </a>
+
+        <a href="wishlist.html">
+            Wishlist
+        </a>
+
+    </nav>
+
+</header>
+
+<section class="filters">
+
+    <input
+        type="text"
+        id="search"
+        placeholder="Buscar juego">
+
+    <button onclick="searchGames()">
+        Buscar
+    </button>
+
+    <select id="genreSelect">
+
+        <option value="">
+            Todos los géneros
+        </option>
+
+    </select>
+
+    <button onclick="filterGenre()">
+        Filtrar
+    </button>
+
+</section>
+
+<div id="gamesContainer"></div>
+
+<script src="browse.js"></script>
+
+</body>
+</html>

@@ -356,6 +356,53 @@ class SteamGraphDB:
             username=username)
 
             return [dict(r) for r in result]
+
+    def add_to_wishlist(self, username: str, appid: int):
+
+        with self.driver.session() as session:
+
+            session.run("""
+                MATCH (u:User {name:$username})
+                MATCH (g:Game {appid:$appid})
+
+                MERGE (u)-[:WISHLIST]->(g)
+            """,
+            username=username,
+            appid=int(appid))
+    
+    def remove_from_wishlist(self, username: str, appid: int):
+
+        with self.driver.session() as session:
+
+            session.run("""
+                MATCH (u:User {name:$username})
+                MATCH (g:Game {appid:$appid})
+
+                MATCH (u)-[r:WISHLIST]->(g)
+
+                DELETE r
+            """,
+            username=username,
+            appid=int(appid))
+
+    def get_wishlist(self, username: str):
+
+        with self.driver.session() as session:
+
+            result = session.run("""
+                MATCH (u:User {name:$username})
+                    -[:WISHLIST]->
+                    (g:Game)
+
+                RETURN
+                    g.appid AS appid,
+                    g.name AS name
+
+                ORDER BY g.name
+            """,
+            username=username)
+
+            return [dict(r) for r in result]
         
 #recomendaciones ////////////////////////////////////////////////////////////////////////////
 
