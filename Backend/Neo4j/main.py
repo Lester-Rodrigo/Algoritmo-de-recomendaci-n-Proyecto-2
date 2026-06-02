@@ -100,6 +100,9 @@ class RatingBody(BaseModel):
     appid: int
     score: float  # 1–10
 
+class LibraryBody(BaseModel):
+    username: str
+    appid: int
 
 #Autenticacion ///////////////////////////////
 @app.post("/api/register")
@@ -177,6 +180,60 @@ def get_ratings(username: str):
     get_user(username)
     return graph.get_user_ratings(username)
 
+@app.post("/api/library/add")
+def add_game(body: LibraryBody):
+
+    get_user(body.username)
+
+    graph.add_game_to_library(
+        body.username,
+        body.appid
+    )
+
+    return {"ok": True}
+
+@app.get("/api/library/{username}")
+def get_library(username: str):
+
+    get_user(username)
+
+    return graph.get_user_library(
+        username
+    )    
+
+@app.post("/api/library/like")
+def like_game(body: LibraryBody):
+
+    get_user(body.username)
+
+    graph.rate_game_like(
+        body.username,
+        body.appid
+    )
+
+    return {"ok": True}
+
+@app.post("/api/library/dislike")
+def dislike_game(body: LibraryBody):
+
+    get_user(body.username)
+
+    graph.rate_game_dislike(
+        body.username,
+        body.appid
+    )
+
+    return {"ok": True}
+
+
+@app.get("/api/recommendations/preferences/{username}")
+def preference_recs(username: str):
+
+    get_user(username)
+
+    return graph.preference_recommendations(
+        username
+    )
 
 @app.get("/api/recommendations/content/{username}")
 def content_recs(username: str):
