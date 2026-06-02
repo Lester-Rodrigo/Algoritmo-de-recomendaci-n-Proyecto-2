@@ -15,7 +15,7 @@ NEO4J_USER     = "neo4j"
 NEO4J_PASSWORD = "qwertyui"
 SQLITE_PATH    = BASE_DIR.parent / "data" / "users.db"
 STEAM_CSV      = BASE_DIR.parent / "data" / "steam.csv"
-IMPORT_LIMIT  = 1000   
+IMPORT_LIMIT  = 100   
 FORCE_IMPORT  = True
 
 sqlite_conn = sqlite3.connect(str(SQLITE_PATH), check_same_thread=False)
@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
             print(f"Importing games from {STEAM_CSV}...")
             graph.import_games_csv(str(STEAM_CSV))
             print("Calculating similarities...")
-            graph.calculate_jaccard_similarity()
+            graph.calculate_similarity()
         else:
             print(f"Warning: {STEAM_CSV} not found. Add it and restart.")
 
