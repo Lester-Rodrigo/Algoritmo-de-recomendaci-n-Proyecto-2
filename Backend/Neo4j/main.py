@@ -6,6 +6,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 from data_base import SteamGraphDB
 
 
@@ -17,6 +20,7 @@ SQLITE_PATH    = BASE_DIR.parent / "data" / "users.db"
 STEAM_CSV      = BASE_DIR.parent / "data" / "steam.csv"
 IMPORT_LIMIT  = 100   
 FORCE_IMPORT  = False #SSOLO CAMBIAR A TRUE SI SE QUIERE REIMPORTAR DESDE EL CSV, 
+FRONTEND_DIR    = BASE_DIR.parent.parent / "Frontend" / "html"
 
 sqlite_conn = sqlite3.connect(str(SQLITE_PATH), check_same_thread=False)
 sqlite_conn.row_factory = sqlite3.Row
@@ -74,6 +78,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory=BASE_DIR.parent.parent / "Frontend"), name="static")
+
+@app.get("/")
+def root():
+    return FileResponse(BASE_DIR.parent.parent / "Frontend" / "html" / "login.html")
 
 
 def get_user(username: str):

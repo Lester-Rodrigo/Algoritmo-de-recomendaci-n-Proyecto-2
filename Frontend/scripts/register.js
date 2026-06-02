@@ -39,7 +39,7 @@ async function register(){
     try {
 
         const response = await fetch(
-            "http://localhost:8000/api/register",
+            "/api/register",
             {
                 method: "POST",
                 headers: {
@@ -64,7 +64,7 @@ async function register(){
             );
 
             window.location.href =
-                "selectgenre.html";
+                "/static/html/selectgenre.html";
 
         } else {
 

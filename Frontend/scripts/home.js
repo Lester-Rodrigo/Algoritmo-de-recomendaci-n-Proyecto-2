@@ -2,7 +2,7 @@ async function loadGames() {
 
     const response =
         await fetch(
-            "http://localhost:8000/api/games"
+            "/api/games"
         );
 
     const games =

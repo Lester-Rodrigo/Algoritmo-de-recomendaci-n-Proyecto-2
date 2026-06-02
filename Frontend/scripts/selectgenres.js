@@ -28,6 +28,6 @@ function goNextPage(){
     }
 
     window.location.href =
-        "../html/profile.html";
+        "/static/html/profile.html";
 
 }

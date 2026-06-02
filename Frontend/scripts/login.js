@@ -16,7 +16,7 @@ async function login() {
     try {
 
         const response = await fetch(
-            "http://localhost:8000/api/login",
+            "/api/login",
             {
                 method: "POST",
                 headers: {
@@ -41,7 +41,7 @@ async function login() {
             alert("Login successful");
 
             window.location.href =
-                "../html/home.html";
+                "/static/html/home.html";
 
         } else {
 
