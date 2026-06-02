@@ -1,3 +1,5 @@
+console.log("login.js loaded");
+
 async function login() {
 
     const username =
@@ -39,7 +41,7 @@ async function login() {
             alert("Login successful");
 
             window.location.href =
-                "home.html";
+                "../html/home.html";
 
         } else {
 

@@ -16,7 +16,7 @@ NEO4J_PASSWORD = "qwertyui"
 SQLITE_PATH    = BASE_DIR.parent / "data" / "users.db"
 STEAM_CSV      = BASE_DIR.parent / "data" / "steam.csv"
 IMPORT_LIMIT  = 100   
-FORCE_IMPORT  = True
+FORCE_IMPORT  = False #SSOLO CAMBIAR A TRUE SI SE QUIERE REIMPORTAR DESDE EL CSV, 
 
 sqlite_conn = sqlite3.connect(str(SQLITE_PATH), check_same_thread=False)
 sqlite_conn.row_factory = sqlite3.Row
@@ -71,7 +71,6 @@ app = FastAPI(title="Steam Recommender", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -135,14 +134,14 @@ def login(body: LoginBody):
 
 
 
-@app.get("/api/games")
-def list_games(limit: int = 50, offset: int = 0):
-    return graph.get_all_games(limit=limit, offset=offset)
-
-
 @app.get("/api/games/search")
 def search_games(q: str, limit: int = 20):
     return graph.search_games(q, limit=limit)
+
+
+@app.get("/api/games")
+def list_games(limit: int = 50, offset: int = 0):
+    return graph.get_all_games(limit=limit, offset=offset)
 
 
 @app.get("/api/games/{appid}")

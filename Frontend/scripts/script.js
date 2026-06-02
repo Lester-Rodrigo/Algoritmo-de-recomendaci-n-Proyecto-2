@@ -123,7 +123,7 @@ genres.forEach(btn => {
 function goNextPage(){
 
     window.location.href =
-    "profile.html";
+    "../html/profile.html";
 
 }
 
