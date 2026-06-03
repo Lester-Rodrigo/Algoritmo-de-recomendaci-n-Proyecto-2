@@ -185,3 +185,19 @@ async function likeGame(appid){
         }
     );
 }
+async function dislikeGame(appid){
+
+    await fetch(
+        `${API}/library/dislike`,
+        {
+            method:"POST",
+            headers:{
+                "Content-Type":"application/json"
+            },
+            body:JSON.stringify({
+                username,
+                appid
+            })
+        }
+    );
+}

@@ -107,7 +107,6 @@ class LibraryBody(BaseModel):
 class WishlistBody(BaseModel):
     username: str
     appid: int
-    
 #Autenticacion ///////////////////////////////
 @app.post("/api/register")
 def register(body: RegisterBody):
@@ -285,6 +284,13 @@ def wishlist(username: str):
     return graph.get_wishlist(
         username
     )
+
+@app.get(
+    "/api/recommendations/wishlist/{username}"
+)
+@app.get(
+    "/api/recommendations/similar-users/{username}"
+)
 
 if __name__ == "__main__":
     import uvicorn
