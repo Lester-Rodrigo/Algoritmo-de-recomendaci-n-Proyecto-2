@@ -117,16 +117,26 @@ class SteamGraphDB:
 
     def search_games(self, query: str, limit: int = 20):
         with self.driver.session() as session:
-            result = session.run(
-                "MATCH (g:Game) WHERE toLower(g.name) CONTAINS toLower($query) "
-                "RETURN g.appid AS appid, g.name AS name, g.price AS price, "
-                "g.release_date AS release_date, "
-                "g.positive_ratings AS positive_ratings, "
-                "g.negative_ratings AS negative_ratings "
-                "ORDER BY positive_ratings DESC LIMIT $limit",
-                query=query, limit=int(limit)
-            )
-            return [dict(r) for r in result]
+            result = session.run("""MATCH (g:Game) 
+                OPTIONAL MATCH(g)-[:HAS_GENRE]->(ge:Genre)
+                OPTIONAL MATCH(g)-[:HAS_TAG]->(t:Tag)
+                WHERE
+                    toLower(g.name)
+                        CONTAINS toLower($query)
+                    OR
+                    toLower(ge.name)
+                        CONTAINS toLower($query)
+                    OR
+                    toLower(t.name)
+                        CONTAINS toLower($query)
+                RETURN DISTINCT
+                    g.appid AS appid,
+                    g.name AS name,
+                    g.price AS price
+                ORDER BY g.name
+                LIMIT $limit
+            """,query=query,limit=limit)
+        return [dict(r) for r in result]
 
     def get_all_genres(self):
         with self.driver.session() as session:

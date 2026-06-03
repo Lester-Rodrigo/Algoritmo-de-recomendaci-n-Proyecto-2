@@ -1,6 +1,13 @@
 const API = "/api";
 const username = localStorage.getItem("username");
 
+let searchTimer;
+function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer =
+        setTimeout(searchGames,300);
+}
+
 window.onload = () => {
     loadGames();
     loadGenres();
