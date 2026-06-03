@@ -15,7 +15,7 @@ NEO4J_USER     = "neo4j"
 NEO4J_PASSWORD = "qwertyui"
 SQLITE_PATH    = BASE_DIR.parent / "data" / "users.db"
 STEAM_CSV      = BASE_DIR.parent / "data" / "steam.csv"
-IMPORT_LIMIT  = 1000   
+IMPORT_LIMIT  = 100   
 FORCE_IMPORT  = True
 
 sqlite_conn = sqlite3.connect(str(SQLITE_PATH), check_same_thread=False)
@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
             print(f"Importing games from {STEAM_CSV}...")
             graph.import_games_csv(str(STEAM_CSV))
             print("Calculating similarities...")
-            graph.calculate_jaccard_similarity()
+            graph.calculate_similarity()
         else:
             print(f"Warning: {STEAM_CSV} not found. Add it and restart.")
 
@@ -71,6 +71,7 @@ app = FastAPI(title="Steam Recommender", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -99,7 +100,13 @@ class RatingBody(BaseModel):
     appid: int
     score: float  # 1–10
 
+class LibraryBody(BaseModel):
+    username: str
+    appid: int
 
+class WishlistBody(BaseModel):
+    username: str
+    appid: int
 #Autenticacion ///////////////////////////////
 @app.post("/api/register")
 def register(body: RegisterBody):
@@ -176,6 +183,60 @@ def get_ratings(username: str):
     get_user(username)
     return graph.get_user_ratings(username)
 
+@app.post("/api/library/add")
+def add_game(body: LibraryBody):
+
+    get_user(body.username)
+
+    graph.add_game_to_library(
+        body.username,
+        body.appid
+    )
+
+    return {"ok": True}
+
+@app.get("/api/library/{username}")
+def get_library(username: str):
+
+    get_user(username)
+
+    return graph.get_user_library(
+        username
+    )    
+
+@app.post("/api/library/like")
+def like_game(body: LibraryBody):
+
+    get_user(body.username)
+
+    graph.rate_game_like(
+        body.username,
+        body.appid
+    )
+
+    return {"ok": True}
+
+@app.post("/api/library/dislike")
+def dislike_game(body: LibraryBody):
+
+    get_user(body.username)
+
+    graph.rate_game_dislike(
+        body.username,
+        body.appid
+    )
+
+    return {"ok": True}
+
+
+@app.get("/api/recommendations/preferences/{username}")
+def preference_recs(username: str):
+
+    get_user(username)
+
+    return graph.preference_recommendations(
+        username
+    )
 
 @app.get("/api/recommendations/content/{username}")
 def content_recs(username: str):
@@ -197,6 +258,39 @@ def hybrid_recs(username: str):
     get_user(username)
     return graph.hybrid_recommendations(username)
 
+@app.post("/api/wishlist/add")
+def wishlist_add(body: WishlistBody):
+
+    graph.add_to_wishlist(
+        body.username,
+        body.appid
+    )
+
+    return {"ok": True}
+
+@app.post("/api/wishlist/remove")
+def wishlist_remove(body: WishlistBody):
+
+    graph.remove_from_wishlist(
+        body.username,
+        body.appid
+    )
+
+    return {"ok": True}
+
+@app.get("/api/wishlist/{username}")
+def wishlist(username: str):
+
+    return graph.get_wishlist(
+        username
+    )
+
+@app.get(
+    "/api/recommendations/wishlist/{username}"
+)
+@app.get(
+    "/api/recommendations/similar-users/{username}"
+)
 
 if __name__ == "__main__":
     import uvicorn

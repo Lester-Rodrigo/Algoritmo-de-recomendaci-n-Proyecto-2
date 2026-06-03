@@ -1,5 +1,5 @@
 console.log("GENRES CARGADO");
-function register(){
+async function register(){
 
     const username =
         document.getElementById("username").value;
@@ -36,6 +36,44 @@ function register(){
         return;
     }
 
-    window.location.href =
-        "selectgenre.html";
+    try {
+
+        const response = await fetch(
+            "http://localhost:8000/api/register",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (response.ok) {
+
+            alert("Account created");
+
+            localStorage.setItem(
+                "username",
+                data.username
+            );
+
+            window.location.href =
+                "selectgenre.html";
+
+        } else {
+
+            alert(data.detail);
+        }
+
+    } catch (error) {
+
+        console.error(error);
+        alert("Cannot connect to server");
+    }
 }

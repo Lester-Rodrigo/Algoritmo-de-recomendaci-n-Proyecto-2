@@ -8,7 +8,11 @@ appid,name,release_date,english,developer,publisher,platforms,required_age,categ
 
 steam_requirements tiene los requerimentos para diferentes plataformas
 
-para el frontend esta tambien steam_description y steam_media, que podemos usar solo para 
+para el frontend esta tambien steam_description y steam_media, que podemos usar solo para display
 
+MATCH ()-[s:SIMILAR]->() DELETE s     borra aristas
+MATCH (g:Game) DETACH DELETE g        borra juegos
 
-
+MATCH (g:Game)-[r]->(n)
+RETURN g, r, n
+LIMIT 50

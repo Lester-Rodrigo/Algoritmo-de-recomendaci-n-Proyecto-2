@@ -204,7 +204,7 @@ class SteamGraphDB:
             )
 
 
-    def import_games_csv(self, filepath: str, limit: int = 1000): 
+    def import_games_csv(self, filepath: str, limit: int = 100): 
         df = pd.read_csv(filepath).head(limit)
         total = len(df)
         for i, (_, row) in enumerate(df.iterrows(), 1):
@@ -258,7 +258,152 @@ class SteamGraphDB:
                     """, g1=g1, g2=g2, score=score)
 
             print(f"  Jaccard done — {total} pairs evaluated.")
+    
+    def add_game_to_library(self, username: str, appid: int):
+        with self.driver.session() as session:
+            session.run("""
+                MATCH (u:User {name:$username})
+                MATCH (g:Game {appid:$appid})
+                MERGE (u)-[:OWNS]->(g)
+            """,
+            username=username,
+            appid=int(appid))
+    
+    def get_user_library(self, username: str):
+        with self.driver.session() as session:
+            result = session.run("""
+                MATCH (u:User {name:$username})-[:OWNS]->(g:Game)
+                RETURN g.appid AS appid,
+                    g.name AS name
+                ORDER BY g.name
+            """,
+            username=username)
 
+            return [dict(r) for r in result]
+
+    def rate_game_like(self, username: str, appid: int):
+
+        with self.driver.session() as session:
+
+            session.run("""
+                MATCH (u:User {name:$username})
+                MATCH (g:Game {appid:$appid})
+
+                MERGE (u)-[r:RATED]->(g)
+                SET r.score = 1
+
+                WITH u,g
+
+                MATCH (g)-[:HAS_GENRE]->(genre:Genre)
+
+                MERGE (u)-[p:PREFERENCE]->(genre)
+
+                ON CREATE SET p.weight = 1
+                ON MATCH SET p.weight = p.weight + 1
+            """,
+            username=username,
+            appid=int(appid))
+
+    def rate_game_dislike(self, username: str, appid: int):
+
+        with self.driver.session() as session:
+
+            session.run("""
+                MATCH (u:User {name:$username})
+                MATCH (g:Game {appid:$appid})
+
+                MERGE (u)-[r:RATED]->(g)
+                SET r.score = -1
+
+                WITH u,g
+
+                MATCH (g)-[:HAS_GENRE]->(genre:Genre)
+
+                MERGE (u)-[p:PREFERENCE]->(genre)
+
+                ON CREATE SET p.weight = -1
+                ON MATCH SET p.weight = p.weight - 1
+            """,
+            username=username,
+            appid=int(appid))
+    
+    def preference_recommendations(self, username: str):
+
+        with self.driver.session() as session:
+
+            result = session.run("""
+                MATCH (u:User {name:$username})
+
+                MATCH (candidate:Game)-[:HAS_GENRE]->(genre:Genre)
+
+                MATCH (u)-[p:PREFERENCE]->(genre)
+
+                WHERE NOT EXISTS(
+                    (u)-[:OWNS]->(candidate)
+                )
+
+                WITH candidate,
+                    SUM(p.weight) AS score
+
+                RETURN candidate.appid AS appid,
+                    candidate.name AS name,
+                    score
+
+                ORDER BY score DESC
+
+                LIMIT 20
+            """,
+            username=username)
+
+            return [dict(r) for r in result]
+
+    def add_to_wishlist(self, username: str, appid: int):
+
+        with self.driver.session() as session:
+
+            session.run("""
+                MATCH (u:User {name:$username})
+                MATCH (g:Game {appid:$appid})
+
+                MERGE (u)-[:WISHLIST]->(g)
+            """,
+            username=username,
+            appid=int(appid))
+    
+    def remove_from_wishlist(self, username: str, appid: int):
+
+        with self.driver.session() as session:
+
+            session.run("""
+                MATCH (u:User {name:$username})
+                MATCH (g:Game {appid:$appid})
+
+                MATCH (u)-[r:WISHLIST]->(g)
+
+                DELETE r
+            """,
+            username=username,
+            appid=int(appid))
+
+    def get_wishlist(self, username: str):
+
+        with self.driver.session() as session:
+
+            result = session.run("""
+                MATCH (u:User {name:$username})
+                    -[:WISHLIST]->
+                    (g:Game)
+
+                RETURN
+                    g.appid AS appid,
+                    g.name AS name
+
+                ORDER BY g.name
+            """,
+            username=username)
+
+            return [dict(r) for r in result]
+        
 #recomendaciones ////////////////////////////////////////////////////////////////////////////
 
     def content_based_recommendations(self, username: str):
