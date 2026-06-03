@@ -9,7 +9,6 @@
     gap: 0;
 }
 
-/* ── TOPBAR ───────────────────────────────────────────────────────────────── */
 .topbar {
     margin-bottom: 24px;
 }
@@ -86,4 +85,20 @@
 /* ── SECTIONS ─────────────────────────────────────────────────────────────── */
 section {
     margin-bottom: 36px;
+}
+
+.btn-active {
+    background: #7C3AED;
+    color: white;
+    border-color: #7C3AED;
+}
+
+.wishlist-active {
+    background: #EC4899;
+    color: white;
+}
+
+.like-active {
+    background: #22C55E;
+    color: white;
 }
