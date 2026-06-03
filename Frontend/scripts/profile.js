@@ -1,99 +1,89 @@
+window.onload = () => {
+    document.getElementById("profile-username").textContent = username;
+    loadStats();
+    loadLikesTab(); // default tab
+};
+
+// ── Avatar & banner ───────────────────────────────────────────────────────────
 const avatar = document.getElementById("avatar");
 const banner = document.getElementById("banner");
 
-const avatarUpload =
-    document.getElementById("avatarUpload");
+avatar.addEventListener("click", () => document.getElementById("avatarUpload").click());
+banner.addEventListener("click", () => document.getElementById("bannerUpload").click());
 
-const bannerUpload =
-    document.getElementById("bannerUpload");
-
-avatar.addEventListener("click", () => {
-    avatarUpload.click();
-});
-
-banner.addEventListener("click", () => {
-    bannerUpload.click();
-});
-
-avatarUpload.addEventListener("change", function(){
-
-    const file = this.files[0];
-
-    if(!file) return;
-
+document.getElementById("avatarUpload").addEventListener("change", function () {
     const reader = new FileReader();
-
-    reader.onload = function(e){
-        avatar.src = e.target.result;
-    };
-
-    reader.readAsDataURL(file);
-
+    reader.onload = e => { avatar.src = e.target.result; };
+    if (this.files[0]) reader.readAsDataURL(this.files[0]);
 });
 
-bannerUpload.addEventListener("change", function(){
-
-    const file = this.files[0];
-
-    if(!file) return;
-
+document.getElementById("bannerUpload").addEventListener("change", function () {
     const reader = new FileReader();
-
-    reader.onload = function(e){
-
-        banner.style.backgroundImage =
-            `url(${e.target.result})`;
-
+    reader.onload = e => {
+        banner.style.backgroundImage = `url(${e.target.result})`;
         banner.style.backgroundSize = "cover";
         banner.style.backgroundPosition = "center";
-
     };
-
-    reader.readAsDataURL(file);
-
+    if (this.files[0]) reader.readAsDataURL(this.files[0]);
 });
 
-const games =
-    JSON.parse(
-        localStorage.getItem(
-            "recommendedGames"
-        )
-    );
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function showTab(id, btn) {
+    document.querySelectorAll(".content > div").forEach(d => d.style.display = "none");
+    document.getElementById(id).style.display = "block";
+    document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
 
-if (games) {
+    if (id === "wishlist-tab") loadWishlistTab();
+    if (id === "genres-tab")   loadGenresTab();
+}
 
-    const container =
-        document.getElementById(
-            "games-container"
-        );
+// ── Stats ─────────────────────────────────────────────────────────────────────
+async function loadStats() {
+    const [reactions, wishlist] = await Promise.all([
+        fetch(`${API}/reactions/${username}`).then(r => r.json()),
+        fetch(`${API}/wishlist/${username}`).then(r => r.json()),
+    ]);
+    document.getElementById("stat-likes").textContent    = reactions.filter(r => r.reaction === "LIKED").length;
+    document.getElementById("stat-wishlist").textContent = wishlist.length;
+}
 
-    games.forEach(game => {
+// ── Likes ─────────────────────────────────────────────────────────────────────
+async function loadLikesTab() {
+    const reactions = await fetch(`${API}/reactions/${username}`).then(r => r.json());
+    const liked = reactions.filter(r => r.reaction === "LIKED");
+    renderGames(liked, "profile-likes", game => `
+        <button class="btn btn-ghost btn-sm" onclick="unlikeGame(${game.appid})">👎 Unlike</button>
+        <button class="btn btn-ghost btn-sm" onclick="wishlistGame(${game.appid})">❤️</button>
+    `);
+}
 
-        const card =
-            document.createElement("div");
+async function unlikeGame(appid) {
+    await fetch(`${API}/reactions/${appid}?username=${username}`, { method: "DELETE" });
+    loadLikesTab();
+    loadStats();
+}
 
-        card.classList.add(
-            "game-card"
-        );
+// ── Wishlist ──────────────────────────────────────────────────────────────────
+async function loadWishlistTab() {
+    const games = await fetch(`${API}/wishlist/${username}`).then(r => r.json());
+    renderGames(games, "profile-wishlist", game => `
+        <button class="btn btn-ghost btn-sm" onclick="removeWishlist(${game.appid})">🗑 Remove</button>
+        <button class="btn btn-ghost btn-sm" onclick="likeGame(${game.appid})">👍</button>
+    `);
+}
 
-        const imageUrl =
-            `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
+async function removeWishlist(appid) {
+    await fetch(`${API}/wishlist/${appid}?username=${username}`, { method: "DELETE" });
+    loadWishlistTab();
+    loadStats();
+}
 
-        card.innerHTML = `
-            <img
-                src="${imageUrl}"
-                alt="${game.game}"
-                class="game-image"
-            >
-
-            <h4>${game.game}</h4>
-
-            <p>Match Score: ${game.score}</p>
-
-            <p>$${game.price}</p>
-        `;
-
-        container.appendChild(card);
-
-    });
+// ── Genres ────────────────────────────────────────────────────────────────────
+async function loadGenresTab() {
+    const genres = await fetch(`${API}/user/genres/${username}`).then(r => r.json());
+    const div = document.getElementById("profile-genres");
+    div.innerHTML = genres.length
+        ? genres.map(g => `<span class="pill pill-accent">${g}</span>`).join("")
+        : `<span class="pill">No genres selected</span>`;
 }

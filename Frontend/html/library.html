@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library — Echoes</title>
+    <link rel="stylesheet" href="/static/styles/style.css">
+</head>
+<body>
+<div class="layout">
+
+    <aside class="sidebar">
+        <img src="/static/imagenes/logo.png" class="sidebar-logo" alt="Echoes">
+        <nav>
+            <a href="/static/html/home.html"> Home</a>
+            <a href="/static/html/discover.html"> Discover</a>
+            <a href="/static/html/browse.html"> Browse</a>
+            <a href="/static/html/library.html" class="active">📚 Library</a>
+            <a href="/static/html/wishlist.html"> Wishlist</a>
+            <a href="/static/html/profile.html"> Profile</a>
+        </nav>
+        <div class="sidebar-bottom" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>My Library</h1>
+            <p>Games you've rated and interacted with</p>
+        </div>
+
+        <div class="search-row">
+            <input type="text" id="search" placeholder="Search to add games…" oninput="debounceSearch()" />
+        </div>
+
+        <div id="results" style="margin-bottom:28px"></div>
+
+        <div class="section-title">Rated Games</div>
+        <div class="games-grid" id="library"></div>
+
+        <br>
+        <div class="section-title">Recommended for You</div>
+        <div class="games-grid" id="recommendations"></div>
+    </main>
+</div>
+<script src="/static/scripts/shared.js"></script>
+<script src="/static/scripts/library.js"></script>
+</body>
+</html>

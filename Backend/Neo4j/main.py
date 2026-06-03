@@ -4,13 +4,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 from data_base import SteamGraphDB
 
+# ── CONFIG ────────────────────────────────────────────────────────────────────
 
 BASE_DIR       = Path(__file__).parent
 NEO4J_URI      = "bolt://localhost:7687"
@@ -18,9 +18,12 @@ NEO4J_USER     = "neo4j"
 NEO4J_PASSWORD = "qwertyui"
 SQLITE_PATH    = BASE_DIR.parent / "data" / "users.db"
 STEAM_CSV      = BASE_DIR.parent / "data" / "steam.csv"
-IMPORT_LIMIT  = 100   
-FORCE_IMPORT  = False #SSOLO CAMBIAR A TRUE SI SE QUIERE REIMPORTAR DESDE EL CSV, 
-FRONTEND_DIR    = BASE_DIR.parent.parent / "Frontend" / "html"
+MEDIA_CSV      = BASE_DIR.parent / "data" / "steam_media_data.csv"
+DESC_CSV       = BASE_DIR.parent / "data" / "steam_description_data.csv"
+IMPORT_LIMIT   = 100
+FORCE_IMPORT   = False  # set True to reimport, then back to False
+
+# ── SQLITE ────────────────────────────────────────────────────────────────────
 
 sqlite_conn = sqlite3.connect(str(SQLITE_PATH), check_same_thread=False)
 sqlite_conn.row_factory = sqlite3.Row
@@ -34,41 +37,42 @@ def init_sqlite():
     """)
     sqlite_conn.commit()
 
+# ── GRAPH ─────────────────────────────────────────────────────────────────────
 
 graph = SteamGraphDB(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
 
+# ── STARTUP ───────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_sqlite()
     graph.create_constraints()
+    graph.load_media(str(MEDIA_CSV), str(DESC_CSV))
 
-    # importa csv 
     with graph.driver.session() as s:
         count = s.run("MATCH (g:Game) RETURN count(g) AS c").single()["c"]
 
     if count == 0 or FORCE_IMPORT:
         if STEAM_CSV.exists():
             print(f"Importing games from {STEAM_CSV}...")
-            graph.import_games_csv(str(STEAM_CSV))
+            graph.import_games_csv(str(STEAM_CSV), limit=IMPORT_LIMIT)
             print("Calculating similarities...")
             graph.calculate_similarity()
         else:
-            print(f"Warning: {STEAM_CSV} not found. Add it and restart.")
+            print(f"Warning: {STEAM_CSV} not found.")
 
-    # ve que cada usuario de SQLite tenga su nodo en Neo4j, por si se crearon antes de que el grafo estuviera listo
-    
     rows = sqlite_conn.execute("SELECT username FROM users").fetchall()
     for row in rows:
         if not graph.user_exists_in_graph(row["username"]):
             graph.create_user(row["username"])
-            print(f"  Repaired missing graph node for user: {row['username']}")
+            print(f"  Repaired graph node for: {row['username']}")
 
-    yield 
+    yield
 
     graph.close()
     sqlite_conn.close()
 
+# ── APP ───────────────────────────────────────────────────────────────────────
 
 app = FastAPI(title="Steam Recommender", lifespan=lifespan)
 
@@ -79,15 +83,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount("/static", StaticFiles(directory=BASE_DIR.parent.parent / "Frontend"), name="static")
+FRONTEND = BASE_DIR.parent.parent / "Frontend"
+app.mount("/static", StaticFiles(directory=FRONTEND), name="static")
 
 @app.get("/")
 def root():
-    return FileResponse(BASE_DIR.parent.parent / "Frontend" / "html" / "login.html")
+    return FileResponse(FRONTEND / "html" / "login.html")
 
+# ── HELPERS ───────────────────────────────────────────────────────────────────
 
 def get_user(username: str):
-    """Return the SQLite user row, or 404 if not found."""
     row = sqlite_conn.execute(
         "SELECT * FROM users WHERE username = ?", (username,)
     ).fetchone()
@@ -95,6 +100,7 @@ def get_user(username: str):
         raise HTTPException(404, f"User '{username}' not found")
     return row
 
+# ── MODELS ────────────────────────────────────────────────────────────────────
 
 class RegisterBody(BaseModel):
     username: str
@@ -107,20 +113,24 @@ class LoginBody(BaseModel):
 class RatingBody(BaseModel):
     username: str
     appid: int
-    score: float  # 1–10
-    
+    score: float
+
 class UserGenresBody(BaseModel):
     username: str
     genres: list[str]
 
+class ReactionBody(BaseModel):
+    username: str
+    appid: int
 
-#Autenticacion ///////////////////////////////
+class WishlistBody(BaseModel):
+    username: str
+    appid: int
+
+# ── AUTH ──────────────────────────────────────────────────────────────────────
+
 @app.post("/api/register")
 def register(body: RegisterBody):
-
-
-    #inserta credencailes en SQLite. Si el username ya existe, lanza error 409 Conflict
-    #crea nodo de usuario en Neo4j. Este nodo es el que luego acumula las relaciones RATED.
     try:
         sqlite_conn.execute(
             "INSERT INTO users (username, password) VALUES (?, ?)",
@@ -129,14 +139,12 @@ def register(body: RegisterBody):
         sqlite_conn.commit()
     except sqlite3.IntegrityError:
         raise HTTPException(409, "Username already taken")
-
     graph.create_user(body.username)
     return {"ok": True, "username": body.username}
 
 
 @app.post("/api/login")
 def login(body: LoginBody):
-    #verifica credenciales y retorna 200 OK si son correctas, 401 si no
     row = sqlite_conn.execute(
         "SELECT * FROM users WHERE username = ? AND password = ?",
         (body.username, body.password),
@@ -145,29 +153,45 @@ def login(body: LoginBody):
         raise HTTPException(401, "Wrong username or password")
     return {"ok": True, "username": body.username}
 
+# ── GENRES ────────────────────────────────────────────────────────────────────
+
+@app.get("/api/genres")
+def list_genres():
+    return graph.get_all_genres()
+
+
 @app.post("/api/user/genres")
 def save_user_genres(body: UserGenresBody):
-
     get_user(body.username)
-
-    graph.add_user_genres(
-        body.username,
-        body.genres
-    )
-
+    graph.add_user_genres(body.username, body.genres)
     return {"ok": True}
 
 
+@app.get("/api/user/genres/{username}")
+def get_user_genres(username: str):
+    get_user(username)
+    return graph.get_user_genres(username)
 
+# ── GAMES ─────────────────────────────────────────────────────────────────────
 
 @app.get("/api/games/search")
 def search_games(q: str, limit: int = 20):
     return graph.search_games(q, limit=limit)
 
 
+@app.get("/api/games/genre/{genre}")
+def games_by_genre(genre: str, limit: int = 50):
+    return graph.get_games_by_genre(genre, limit=limit)
+
+
 @app.get("/api/games")
 def list_games(limit: int = 50, offset: int = 0):
     return graph.get_all_games(limit=limit, offset=offset)
+
+
+@app.get("/api/games/{appid}/media")
+def get_game_media(appid: int):
+    return graph.get_game_media(appid)
 
 
 @app.get("/api/games/{appid}")
@@ -177,9 +201,7 @@ def get_game(appid: int):
         raise HTTPException(404, "Game not found")
     return game
 
-
-# (:User {name})-[:RATED {score}]->(:Game {appid})
-#ratings se guardan como relaciones en el grafo  
+# ── RATINGS ───────────────────────────────────────────────────────────────────
 
 @app.post("/api/ratings")
 def rate_game(body: RatingBody):
@@ -202,32 +224,87 @@ def get_ratings(username: str):
     get_user(username)
     return graph.get_user_ratings(username)
 
+# ── LIKES / DISLIKES ──────────────────────────────────────────────────────────
+
+@app.post("/api/reactions/like")
+def like_game(body: ReactionBody):
+    get_user(body.username)
+    graph.like_game(body.username, body.appid)
+    return {"ok": True}
+
+
+@app.post("/api/reactions/dislike")
+def dislike_game(body: ReactionBody):
+    get_user(body.username)
+    graph.dislike_game(body.username, body.appid)
+    return {"ok": True}
+
+
+@app.delete("/api/reactions/{appid}")
+def remove_reaction(appid: int, username: str):
+    get_user(username)
+    graph.remove_reaction(username, appid)
+    return {"ok": True}
+
+
+@app.get("/api/reactions/{username}")
+def get_reactions(username: str):
+    get_user(username)
+    return graph.get_user_reactions(username)
+
+
+@app.get("/api/reactions/{username}/{appid}")
+def get_game_reaction(username: str, appid: int):
+    get_user(username)
+    return {"reaction": graph.get_game_reaction(username, appid)}
+
+# ── WISHLIST ──────────────────────────────────────────────────────────────────
+
+@app.post("/api/wishlist")
+def add_to_wishlist(body: WishlistBody):
+    get_user(body.username)
+    graph.add_to_wishlist(body.username, body.appid)
+    return {"ok": True}
+
+
+@app.delete("/api/wishlist/{appid}")
+def remove_from_wishlist(appid: int, username: str):
+    get_user(username)
+    graph.remove_from_wishlist(username, appid)
+    return {"ok": True}
+
+
+@app.get("/api/wishlist/{username}")
+def get_wishlist(username: str):
+    get_user(username)
+    return graph.get_wishlist(username)
+
+# ── RECOMMENDATIONS ───────────────────────────────────────────────────────────
 
 @app.get("/api/recommendations/content/{username}")
 def content_recs(username: str):
-    #sigue aristas similares
     get_user(username)
     return graph.content_based_recommendations(username)
 
 
 @app.get("/api/recommendations/collaborative/{username}")
 def collab_recs(username: str):
-    #juegos que les gustaron a usuarios con gustos similares que hayan calificado los mismos juegos
     get_user(username)
     return graph.collaborative_filtering(username)
 
 
 @app.get("/api/recommendations/hybrid/{username}")
 def hybrid_recs(username: str):
-
     get_user(username)
     return graph.hybrid_recommendations(username)
 
-@app.get("/api/recommendations/genres/{username}")
-def genre_recommendations(username: str):
 
+@app.get("/api/recommendations/genres/{username}")
+def genre_recs(username: str):
+    get_user(username)
     return graph.expanded_recommendations(username)
 
+# ── ENTRY POINT ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     import uvicorn

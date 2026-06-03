@@ -1,62 +1,40 @@
+// Load genres from the graph on page load
+window.onload = async () => {
+    const res    = await fetch("/api/genres");
+    const genres = await res.json();
+    const grid   = document.getElementById("genre-grid");
+
+    genres.forEach(genre => {
+        const btn = document.createElement("button");
+        btn.className   = "genre-btn";
+        btn.textContent = genre;
+        btn.addEventListener("click", () => btn.classList.toggle("selected"));
+        grid.appendChild(btn);
+    });
+};
+
 async function goNextPage() {
+    const selectedButtons = document.querySelectorAll(".genre-btn.selected");
 
-    const selectedGenres =
-        document.querySelectorAll(
-            ".genre-btn.selected"
-        );
-
-    if(selectedGenres.length < 3){
-
-        alert(
-            "Please select at least 3 genres."
-        );
-
+    if (selectedButtons.length < 3) {
+        alert("Please select at least 3 genres.");
         return;
     }
 
-    const genres =
-        Array.from(selectedGenres)
-        .map(btn => btn.textContent);
+    const genres   = Array.from(selectedButtons).map(btn => btn.textContent.trim());
+    const username = localStorage.getItem("username");
 
     try {
+        await fetch("/api/user/genres", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, genres })
+        });
 
-        const response = await fetch(
-            "/api/genres",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-                body: JSON.stringify({
-                    genres: genres
-                })
-            }
-        );
+        window.location.href = "/static/html/home.html";
 
-        const username =
-            localStorage.getItem("username");
-
-        await fetch("/api/user/genres",
-            {
-                method: "POST",
-                headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({
-                    username: username,
-                    genres: genres
-                })
-            }
-        );
-
-        window.location.href =
-            "/static/html/profile.html";
-
-    } catch(error) {
-
+    } catch (error) {
         console.error(error);
-
-        alert(
-            "Error obtaining recommendations"
-        );
+        alert("Error saving genres");
     }
 }

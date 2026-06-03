@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse — Echoes</title>
+    <link rel="stylesheet" href="/static/styles/style.css">
+    <style>
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .filters input { flex: 1; min-width: 200px; }
+    </style>
+</head>
+<body>
+<div class="layout">
+
+    <aside class="sidebar">
+        <img src="/static/imagenes/logo.png" class="sidebar-logo" alt="Echoes">
+        <nav>
+            <a href="/static/html/home.html"> Home</a>
+            <a href="/static/html/discover.html"> Discover</a>
+            <a href="/static/html/browse.html" class="active">🔍 Browse</a>
+            <a href="/static/html/library.html"> Library</a>
+            <a href="/static/html/wishlist.html"> Wishlist</a>
+            <a href="/static/html/profile.html"> Profile</a>
+        </nav>
+        <div class="sidebar-bottom" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Browse Games</h1>
+            <p>Search and discover games from the catalog</p>
+        </div>
+
+        <div class="filters">
+            <input type="text" id="search" placeholder="Search by title…" oninput="debounceSearch()" />
+            <select id="genreSelect" onchange="filterGenre()">
+                <option value="">All genres</option>
+            </select>
+            <button class="btn btn-ghost" onclick="loadGames()">Reset</button>
+        </div>
+
+        <div class="section-title">Games</div>
+        <div class="games-grid" id="gamesContainer"></div>
+    </main>
+</div>
+<script src="/static/scripts/shared.js"></script>
+<script src="/static/scripts/browse.js"></script>
+</body>
+</html>

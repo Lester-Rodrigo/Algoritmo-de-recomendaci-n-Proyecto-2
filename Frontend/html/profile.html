@@ -3,146 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Echoes Profile</title>
-
+    <title>Profile — Echoes</title>
+    <link rel="stylesheet" href="/static/styles/style.css">
     <link rel="stylesheet" href="/static/styles/profile.css">
 </head>
 <body>
-
 <div class="layout">
 
-    <!-- SIDEBAR -->
-
     <aside class="sidebar">
-
-        <img
-            src="/static/imagenes/logo.png"
-            class="sidebar-logo"
-            alt="Echoes Logo"
-        >
-
+        <img src="/static/imagenes/logo.png" class="sidebar-logo" alt="Echoes">
         <nav>
-
-            <a href="/static/html/home.html">Home</a>
-            <a href="/static/html/discover.html">Discover</a>
-            <a href="/static/html/recommendations.html">Recommendations</a>
-            <a href="/static/html/browse.html">Browse</a>
-            <a href="/static/html/wishlist.html">Wishlist</a>
-            <a href="/static/html/profile.html">Profile</a>
-
+            <a href="/static/html/home.html">🏠 Home</a>
+            <a href="/static/html/discover.html">✨ Discover</a>
+            <a href="/static/html/browse.html">🔍 Browse</a>
+            <a href="/static/html/library.html">📚 Library</a>
+            <a href="/static/html/wishlist.html">❤️ Wishlist</a>
+            <a href="/static/html/profile.html" class="active">👤 Profile</a>
         </nav>
-
+        <div class="sidebar-bottom" id="sidebar-user"></div>
     </aside>
-
-    <!-- PROFILE -->
 
     <main class="profile-container">
 
-        <div class="profile-header">
+        <div class="banner" id="banner">
+            <input type="file" id="bannerUpload" accept="image/*" hidden>
+        </div>
 
-            <div class="banner" id="banner">
-                <input
-                    type="file"
-                    id="bannerUpload"
-                    accept="image/*"
-                    hidden
-                >
-            </div>
+        <div class="avatar-wrapper">
+            <img src="/static/imagenes/avatar.png" class="avatar" id="avatar" alt="Avatar">
+            <input type="file" id="avatarUpload" accept="image/*" hidden>
+        </div>
 
-            <div class="avatar-wrapper">
+        <div class="user-info">
+            <h2 id="profile-username">—</h2>
+            <p>Echoes member</p>
+        </div>
 
-                <img
-                    src="/static/imagenes/avatar.png"
-                    class="avatar"
-                    id="avatar"
-                >
-
-                <input
-                    type="file"
-                    id="avatarUpload"
-                    accept="image/*"
-                    hidden
-                >
-
-            </div>
-
-            <div class="user-info">
-
-                <h2>Nombre de perfil</h2>
-                <p>Bio</p>
-
-            </div>
-
-            <div class="stats">
-
-                <div>
-                    <h2>89</h2>
-                    <span>Games Rated</span>
-                </div>
-
-                <div>
-                    <h2>32</h2>
-                    <span>Likes</span>
-                </div>
-
-                <div>
-                    <h2>12</h2>
-                    <span>Wishlist</span>
-                </div>
-
-                <div>
-                    <h2>24</h2>
-                    <span>Level</span>
-                </div>
-
-            </div>
-
+        <div class="stats">
+            <div><h2 id="stat-likes">0</h2><span>Likes</span></div>
+            <div><h2 id="stat-wishlist">0</h2><span>Wishlist</span></div>
         </div>
 
         <div class="tabs">
-
-            <button class="active">Overview</button>
-            <button>Activity</button>
-            <button>Wishlist</button>
-            <button>Likes</button>
-            <button>Stats</button>
-
+            <button class="active" onclick="showTab('likes-tab', this)">Likes</button>
+            <button onclick="showTab('wishlist-tab', this)">Wishlist</button>
+            <button onclick="showTab('genres-tab', this)">Genres</button>
         </div>
 
         <div class="content">
 
-            <section>
+            <div id="likes-tab">
+                <div class="games-grid" id="profile-likes"></div>
+            </div>
 
-                <h3>Favorite Genres</h3>
+            <div id="wishlist-tab" style="display:none">
+                <div class="games-grid" id="profile-wishlist"></div>
+            </div>
 
-                <div class="genres">
-
-                    <span>RPG</span>
-                    <span>Soulslike</span>
-                    <span>Adventure</span>
-                    <span>Indie</span>
-
-                </div>
-
-            </section>
-
-            <section>
-
-                <h3>Recommended Games</h3>
-
-                <div class="games-grid" id="games-container">
-
-                </div>
-
-            </section>
+            <div id="genres-tab" style="display:none">
+                <div class="genres" id="profile-genres"></div>
+            </div>
 
         </div>
 
     </main>
-
 </div>
-
+<script src="/static/scripts/shared.js"></script>
 <script src="/static/scripts/profile.js"></script>
-
 </body>
 </html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wishlist — Echoes</title>
+    <link rel="stylesheet" href="/static/styles/style.css">
+</head>
+<body>
+<div class="layout">
+
+    <aside class="sidebar">
+        <img src="/static/imagenes/logo.png" class="sidebar-logo" alt="Echoes">
+        <nav>
+            <a href="/static/html/home.html"> Home</a>
+            <a href="/static/html/discover.html"> Discover</a>
+            <a href="/static/html/browse.html"> Browse</a>
+            <a href="/static/html/library.html"> Library</a>
+            <a href="/static/html/wishlist.html" class="active"> Wishlist</a>
+            <a href="/static/html/profile.html"> Profile</a>
+        </nav>
+        <div class="sidebar-bottom" id="sidebar-user"></div>
+    </aside>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Wishlist</h1>
+            <p>Games you want to play</p>
+        </div>
+
+        <div class="search-row">
+            <input type="text" id="search" placeholder="Search to add games…" oninput="debounceSearch()" />
+        </div>
+
+        <div id="results" style="margin-bottom:28px"></div>
+
+        <div class="section-title">Saved Games</div>
+        <div class="games-grid" id="wishlist"></div>
+    </main>
+</div>
+<script src="/static/scripts/shared.js"></script>
+<script src="/static/scripts/wishlist.js"></script>
+</body>
+</html>

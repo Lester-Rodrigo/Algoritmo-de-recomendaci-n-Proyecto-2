@@ -1,46 +1,29 @@
-<link rel="stylesheet" href="/static/styles/genres.css">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Genres — Echoes</title>
+    <link rel="stylesheet" href="/static/styles/genres.css">
+</head>
 <body>
-
     <div class="genre-container">
 
-        <img
-        src="/static/imagenes/logo.png"
-        alt="Logo"
-        class="logo"
-            >
+        <img src="/static/imagenes/logo.png" alt="Logo" class="logo">
 
         <h1>What genres do you enjoy?</h1>
-
         <p>Select at least 3 genres</p>
 
-        <div class="genre-grid">
-
-            <button class="genre-btn">RPG</button>
-            <button class="genre-btn">Action</button>
-            <button class="genre-btn">Adventure</button>
-            <button class="genre-btn">Indie</button>
-            <button class="genre-btn">FPS</button>
-            <button class="genre-btn">TPS</button>
-            <button class="genre-btn">Battle Royal</button>
-            <button class="genre-btn">MOBA</button>
-            <button class="genre-btn">Metroidvania</button>
-            <button class="genre-btn">Soulslike</button>
-            <button class="genre-btn">Roguelite</button>
-            <button class="genre-btn">Open World</button>
-            <button class="genre-btn">Survival</button>
-
-            
-
-            
+        <div class="genre-grid" id="genre-grid">
+            <!-- populated from /api/genres -->
         </div>
 
-        <button class="continue-btn"
-        onclick="goNextPage()">
+        <button class="continue-btn" onclick="goNextPage()">
             Continue
         </button>
 
     </div>
 
     <script src="/static/scripts/selectgenres.js"></script>
-
 </body>
+</html>
