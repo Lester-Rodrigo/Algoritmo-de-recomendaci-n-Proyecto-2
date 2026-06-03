@@ -12,7 +12,7 @@ class SteamGraphDB:
     def close(self):
         self.driver.close()
 
-    # ── CONSTRAINTS ───────────────────────────────────────────────────────────
+    
 
     def create_constraints(self):
         with self.driver.session() as session:
@@ -22,7 +22,7 @@ class SteamGraphDB:
             session.run("CREATE CONSTRAINT tag_name IF NOT EXISTS FOR (t:Tag) REQUIRE t.name IS UNIQUE")
             session.run("CREATE CONSTRAINT developer_name IF NOT EXISTS FOR (d:Developer) REQUIRE d.name IS UNIQUE")
 
-    # ── GAMES ─────────────────────────────────────────────────────────────────
+    # GAMES ///////////////////////////////////////////
 
     def create_game(self, row):
         try:
@@ -146,7 +146,7 @@ class SteamGraphDB:
             )
             return [dict(r) for r in result]
 
-    # ── MEDIA (CSV → memory, not stored in Neo4j) ─────────────────────────────
+    # MEDIA Y DESC
 
     def load_media(self, media_csv: str, desc_csv: str):
         self._media = {}
@@ -186,7 +186,7 @@ class SteamGraphDB:
         desc  = getattr(self, "_descriptions", {}).get(appid, {})
         return {**media, **desc}
 
-    # ── USERS ─────────────────────────────────────────────────────────────────
+    # USERS ///////////////////////////////////////////
 
     def create_user(self, username: str):
         with self.driver.session() as session:
@@ -201,7 +201,7 @@ class SteamGraphDB:
             ).single()
             return result is not None
 
-    # ── GENRE PREFERENCES ─────────────────────────────────────────────────────
+    # PREFERENCES ///////////////////////////////////////////   
 
     def add_user_genres(self, username: str, genres: list):
         with self.driver.session() as session:
@@ -222,7 +222,7 @@ class SteamGraphDB:
             """, username=username)
             return [r["genre"] for r in result]
 
-    # ── LIKES / DISLIKES ──────────────────────────────────────────────────────
+    # LIKES/DISLIKES ///////////////////////////////////////////
 
     def like_game(self, username: str, appid: int):
         with self.driver.session() as session:
@@ -276,7 +276,7 @@ class SteamGraphDB:
             """, username=username, appid=appid).single()
             return result["reaction"] if result else None
 
-    # ── WISHLIST ──────────────────────────────────────────────────────────────
+    # WISHLIST /////////////////////////////////////////////////////
 
     def add_to_wishlist(self, username: str, appid: int):
         with self.driver.session() as session:
@@ -317,7 +317,7 @@ class SteamGraphDB:
             """, username=username, appid=appid).single()
             return result is not None
 
-    # ── RATINGS ───────────────────────────────────────────────────────────────
+    # RATINGS //////////////////////////////////////////////////////
 
     def add_user_rating(self, username: str, appid: int, score: float):
         with self.driver.session() as session:
@@ -348,7 +348,7 @@ class SteamGraphDB:
                 """, username=username, appid=int(appid))
             )
 
-    # ── IMPORT ────────────────────────────────────────────────────────────────
+    # IMPORT
 
     def import_games_csv(self, filepath: str, limit: int = 100):
         df = pd.read_csv(filepath).head(limit)
@@ -362,7 +362,8 @@ class SteamGraphDB:
                 print(f"  Imported {i}/{total} games...")
         print(f"  Done — {total} games imported.")
 
-    # ── SIMILARITY ────────────────────────────────────────────────────────────
+    # SIMILARITY //////////////////////////////////////
+
 
     def calculate_similarity(self):
         with self.driver.session() as session:
@@ -416,7 +417,7 @@ class SteamGraphDB:
 
         print(f"  Done — {total} pairs, {similar} similar edges created.")
 
-    # ── RECOMMENDATIONS ───────────────────────────────────────────────────────
+    # RECOMMENDATIONS ///////////////////////////////////////////
 
     def content_based_recommendations(self, username: str):
         with self.driver.session() as session:
