@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from pathlib import Path
 from contextlib import asynccontextmanager
@@ -9,21 +10,23 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from data_base import SteamGraphDB
+from dotenv import load_dotenv
+# CONF
 
-# ── CONFIG ────────────────────────────────────────────────────────────────────
 
 BASE_DIR       = Path(__file__).parent
-NEO4J_URI      = "bolt://localhost:7687"
-NEO4J_USER     = "neo4j"
-NEO4J_PASSWORD = "qwertyui"
-SQLITE_PATH    = BASE_DIR.parent / "data" / "users.db"
-STEAM_CSV      = BASE_DIR.parent / "data" / "steam.csv"
-MEDIA_CSV      = BASE_DIR.parent / "data" / "steam_media_data.csv"
-DESC_CSV       = BASE_DIR.parent / "data" / "steam_description_data.csv"
-IMPORT_LIMIT   = 100
-FORCE_IMPORT   = False  # set True to reimport, then back to False
+load_dotenv(BASE_DIR / ".env")
+NEO4J_URI      = os.getenv("NEO4J_URI",      "bolt://localhost:7687")
+NEO4J_USER     = os.getenv("NEO4J_USER",     "neo4j")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "password")
+SQLITE_PATH    = BASE_DIR / os.getenv("SQLITE_PATH", "../data/users.db")
+STEAM_CSV      = BASE_DIR / os.getenv("STEAM_CSV",   "../data/steam.csv")
+MEDIA_CSV      = BASE_DIR / os.getenv("MEDIA_CSV",   "../data/steam_media_data.csv")
+DESC_CSV       = BASE_DIR / os.getenv("DESC_CSV",    "../data/steam_description_data.csv")
+IMPORT_LIMIT   = int(os.getenv("IMPORT_LIMIT", "100"))
+FORCE_IMPORT   = os.getenv("FORCE_IMPORT", "False") == "True"
 
-# ── SQLITE ────────────────────────────────────────────────────────────────────
+# SQLITE
 
 sqlite_conn = sqlite3.connect(str(SQLITE_PATH), check_same_thread=False)
 sqlite_conn.row_factory = sqlite3.Row
@@ -37,11 +40,11 @@ def init_sqlite():
     """)
     sqlite_conn.commit()
 
-# ── GRAPH ─────────────────────────────────────────────────────────────────────
+# GRAFO
 
 graph = SteamGraphDB(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
 
-# ── STARTUP ───────────────────────────────────────────────────────────────────
+# STARTUP
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -72,7 +75,7 @@ async def lifespan(app: FastAPI):
     graph.close()
     sqlite_conn.close()
 
-# ── APP ───────────────────────────────────────────────────────────────────────
+
 
 app = FastAPI(title="Steam Recommender", lifespan=lifespan)
 
@@ -90,7 +93,6 @@ app.mount("/static", StaticFiles(directory=FRONTEND), name="static")
 def root():
     return FileResponse(FRONTEND / "html" / "login.html")
 
-# ── HELPERS ───────────────────────────────────────────────────────────────────
 
 def get_user(username: str):
     row = sqlite_conn.execute(
@@ -100,7 +102,6 @@ def get_user(username: str):
         raise HTTPException(404, f"User '{username}' not found")
     return row
 
-# ── MODELS ────────────────────────────────────────────────────────────────────
 
 class RegisterBody(BaseModel):
     username: str
@@ -127,7 +128,7 @@ class WishlistBody(BaseModel):
     username: str
     appid: int
 
-# ── AUTH ──────────────────────────────────────────────────────────────────────
+# AUTENTICACION
 
 @app.post("/api/register")
 def register(body: RegisterBody):
@@ -153,7 +154,7 @@ def login(body: LoginBody):
         raise HTTPException(401, "Wrong username or password")
     return {"ok": True, "username": body.username}
 
-# ── GENRES ────────────────────────────────────────────────────────────────────
+# GENEROS ////////////////////////////
 
 @app.get("/api/genres")
 def list_genres():
@@ -172,7 +173,7 @@ def get_user_genres(username: str):
     get_user(username)
     return graph.get_user_genres(username)
 
-# ── GAMES ─────────────────────────────────────────────────────────────────────
+# GAMES //////////////////////////////////////////////////////
 
 @app.get("/api/games/search")
 def search_games(q: str, limit: int = 20):
@@ -201,7 +202,7 @@ def get_game(appid: int):
         raise HTTPException(404, "Game not found")
     return game
 
-# ── RATINGS ───────────────────────────────────────────────────────────────────
+# RATINGGS ////////////////////////////////////////////////////
 
 @app.post("/api/ratings")
 def rate_game(body: RatingBody):
@@ -224,7 +225,7 @@ def get_ratings(username: str):
     get_user(username)
     return graph.get_user_ratings(username)
 
-# ── LIKES / DISLIKES ──────────────────────────────────────────────────────────
+# LIKES/DISLIKES //////////////////////////////////////////////////
 
 @app.post("/api/reactions/like")
 def like_game(body: ReactionBody):
@@ -258,7 +259,7 @@ def get_game_reaction(username: str, appid: int):
     get_user(username)
     return {"reaction": graph.get_game_reaction(username, appid)}
 
-# ── WISHLIST ──────────────────────────────────────────────────────────────────
+# WISHLIST ///////////////////////////////////////////////////
 
 @app.post("/api/wishlist")
 def add_to_wishlist(body: WishlistBody):
@@ -279,7 +280,7 @@ def get_wishlist(username: str):
     get_user(username)
     return graph.get_wishlist(username)
 
-# ── RECOMMENDATIONS ───────────────────────────────────────────────────────────
+# RECOMENDACIONES /////////////////////////////////////////////
 
 @app.get("/api/recommendations/content/{username}")
 def content_recs(username: str):
@@ -304,7 +305,7 @@ def genre_recs(username: str):
     get_user(username)
     return graph.expanded_recommendations(username)
 
-# ── ENTRY POINT ───────────────────────────────────────────────────────────────
+# MIAN ///////////////////////////////////////////////////////
 
 if __name__ == "__main__":
     import uvicorn

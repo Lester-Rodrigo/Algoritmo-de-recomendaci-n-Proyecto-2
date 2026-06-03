@@ -1,14 +1,21 @@
 const API = "/api";
 const username = localStorage.getItem("username");
 
+// Show username in sidebar
 const sidebarUser = document.getElementById("sidebar-user");
 if (sidebarUser && username) {
     sidebarUser.textContent = `👤 ${username}`;
 }
 
-if (!username && !window.location.pathname.includes("login") && !window.location.pathname.includes("register")) {
+// Redirect to login if not logged in
+if (!username &&
+    !window.location.pathname.includes("login") &&
+    !window.location.pathname.includes("register") &&
+    !window.location.pathname.includes("selectgenre")) {
     window.location.href = "/static/html/login.html";
 }
+
+
 
 function makeGameCard(game, actions) {
     const appid = game.appid;
@@ -20,40 +27,60 @@ function makeGameCard(game, actions) {
     card.dataset.appid = appid;
 
     card.innerHTML = `
-        <img src="" alt="${name}" loading="lazy" onerror="this.style.display='none'">
+        <div class="card-img-wrap">
+            <div class="card-img-placeholder"></div>
+            <img class="card-img" src="" alt="${name}" style="display:none">
+        </div>
         <div class="game-card-body">
             <h3>${name}</h3>
             <span class="price">${price}</span>
             <p class="desc"></p>
         </div>
-        <div class="game-card-actions">${actions ?? ""}</div>
+        <div class="game-card-actions">${actions ?? defaultActions(appid)}</div>
     `;
 
+    // fetch image + description without blocking card render
     fetch(`${API}/games/${appid}/media`)
         .then(r => r.json())
         .then(media => {
-            const img = card.querySelector("img");
-            if (media.header_image) {
-                img.src = media.header_image;
+            const img         = card.querySelector(".card-img");
+            const placeholder = card.querySelector(".card-img-placeholder");
+            const src = media.header_image || media.background || "";
+
+            if (src) {
+                img.onload = () => {
+                    placeholder.style.display = "none";
+                    img.style.display = "block";
+                };
+                img.onerror = () => {
+                    placeholder.style.display = "none";
+                };
+                img.src = src;
             } else {
-                img.style.display = "none";
+                placeholder.style.display = "none";
             }
-            const desc = card.querySelector(".desc");
+
             if (media.short_description) {
-                desc.textContent = media.short_description;
+                card.querySelector(".desc").textContent = media.short_description;
             }
         })
         .catch(() => {
-            card.querySelector("img").style.display = "none";
+            card.querySelector(".card-img-placeholder").style.display = "none";
         });
 
     return card;
 }
 
+function defaultActions(appid) {
+    return `
+        <button class="btn btn-ghost btn-sm" onclick="wishlistGame(${appid})">❤️</button>
+        <button class="btn btn-ghost btn-sm" onclick="likeGame(${appid})">👍</button>
+        <button class="btn btn-ghost btn-sm" onclick="dislikeGame(${appid})">👎</button>
+    `;
+}
+
 function renderGames(games, container, actionsFn) {
-    if (typeof container === "string") {
-        container = document.getElementById(container);
-    }
+    if (typeof container === "string") container = document.getElementById(container);
     container.innerHTML = "";
 
     if (!games || !games.length) {
@@ -67,13 +94,7 @@ function renderGames(games, container, actionsFn) {
     });
 }
 
-function defaultActions(appid) {
-    return `
-        <button class="btn btn-primary btn-sm" onclick="wishlistGame(${appid})">❤️</button>
-        <button class="btn btn-ghost btn-sm" onclick="likeGame(${appid})">👍</button>
-        <button class="btn btn-ghost btn-sm" onclick="dislikeGame(${appid})">👎</button>
-    `;
-}
+// ── COMMON ACTIONS ────────────────────────────────────────────────────────────
 
 async function wishlistGame(appid) {
     await fetch(`${API}/wishlist`, {

@@ -25,8 +25,10 @@ body {
     min-height: 100vh;
 }
 
+/*layout*/
 .layout { display: flex; min-height: 100vh; }
 
+/* sidebar */
 .sidebar {
     width: 240px;
     background: var(--surface);
@@ -77,7 +79,9 @@ body {
     color: var(--muted);
 }
 
+
 .main-content { flex: 1; padding: 32px; overflow-y: auto; }
+
 
 .page-header {
     margin-bottom: 28px;
@@ -88,6 +92,7 @@ body {
     letter-spacing: -.02em;
 }
 .page-header p { color: var(--muted); margin-top: 4px; font-size: .9rem; }
+
 
 .search-row {
     display: flex;
@@ -214,7 +219,6 @@ body {
 }
 .empty strong { display: block; font-size: 1rem; color: var(--text); margin-bottom: 6px; }
 
-
 .pill {
     background: var(--surface2);
     border: 1px solid var(--border);
@@ -242,7 +246,39 @@ select:focus { border-color: var(--accent); }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
 
-/* ===== LOGIN PAGE ===== */
+.card-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    background: var(--surface2);
+    overflow: hidden;
+}
+
+.card-img-placeholder {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        var(--surface2) 25%,
+        var(--surface3) 50%,
+        var(--surface2) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.card-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
 .login-container {
     min-height: 100vh;

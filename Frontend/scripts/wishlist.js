@@ -1,17 +1,16 @@
-// wishlist.js
 let searchTimer;
 
 window.onload = () => loadWishlist();
 
 function debounceSearch() {
     clearTimeout(searchTimer);
-    searchTimer = setTimeout(doSearch, 350);
+    searchTimer = setTimeout(doSearch, 300);
 }
 
 async function doSearch() {
     const q = document.getElementById("search").value.trim();
     if (!q) { document.getElementById("results").innerHTML = ""; return; }
-    const res = await fetch(`${API}/games/search?q=${encodeURIComponent(q)}`);
+    const res   = await fetch(`${API}/games/search?q=${encodeURIComponent(q)}`);
     const games = await res.json();
     renderGames(games, "results", game => `
         <button class="btn btn-primary btn-sm" onclick="addToWishlist(${game.appid})">❤️ Add</button>

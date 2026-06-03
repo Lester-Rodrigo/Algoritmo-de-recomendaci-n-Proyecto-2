@@ -6,7 +6,7 @@ window.onload = () => {
 };
 
 async function loadHero() {
-    const res   = await fetch(`${API}/games?limit=20`);
+    const res   = await fetch(`${API}/games?limit=100`);
     const games = await res.json();
     if (!games.length) return;
 
@@ -17,7 +17,7 @@ async function loadHero() {
     const hero  = document.getElementById("hero");
 
     if (media.background || media.header_image) {
-        hero.style.backgroundImage = `linear-gradient(to right, rgba(7,11,29,.95) 35%, rgba(7,11,29,.4)), url('${media.background || media.header_image}')`;
+        hero.style.backgroundImage = `linear-gradient(to right, rgba(7,11,29,.95) 15%, rgba(7,11,29,.0)), url('${media.background || media.header_image}')`;
         hero.style.backgroundSize = "cover";
         hero.style.backgroundPosition = "center";
     }
