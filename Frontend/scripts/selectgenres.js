@@ -1,17 +1,4 @@
-const genres =
-document.querySelectorAll(".genre-btn");
-
-genres.forEach(btn => {
-
-    btn.addEventListener("click", () => {
-
-        btn.classList.toggle("selected");
-
-    });
-
-});
-
-function goNextPage(){
+async function goNextPage() {
 
     const selectedGenres =
         document.querySelectorAll(
@@ -27,7 +14,49 @@ function goNextPage(){
         return;
     }
 
-    window.location.href =
-        "/static/html/profile.html";
+    const genres =
+        Array.from(selectedGenres)
+        .map(btn => btn.textContent);
 
+    try {
+
+        const response = await fetch(
+            "/api/genres",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+                body: JSON.stringify({
+                    genres: genres
+                })
+            }
+        );
+
+        const username =
+            localStorage.getItem("username");
+
+        await fetch("/api/user/genres",
+            {
+                method: "POST",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({
+                    username: username,
+                    genres: genres
+                })
+            }
+        );
+
+        window.location.href =
+            "/static/html/profile.html";
+
+    } catch(error) {
+
+        console.error(error);
+
+        alert(
+            "Error obtaining recommendations"
+        );
+    }
 }

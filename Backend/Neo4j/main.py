@@ -108,6 +108,10 @@ class RatingBody(BaseModel):
     username: str
     appid: int
     score: float  # 1–10
+    
+class UserGenresBody(BaseModel):
+    username: str
+    genres: list[str]
 
 
 #Autenticacion ///////////////////////////////
@@ -140,6 +144,18 @@ def login(body: LoginBody):
     if not row:
         raise HTTPException(401, "Wrong username or password")
     return {"ok": True, "username": body.username}
+
+@app.post("/api/user/genres")
+def save_user_genres(body: UserGenresBody):
+
+    get_user(body.username)
+
+    graph.add_user_genres(
+        body.username,
+        body.genres
+    )
+
+    return {"ok": True}
 
 
 
@@ -206,6 +222,11 @@ def hybrid_recs(username: str):
 
     get_user(username)
     return graph.hybrid_recommendations(username)
+
+@app.get("/api/recommendations/genres/{username}")
+def genre_recommendations(username: str):
+
+    return graph.expanded_recommendations(username)
 
 
 if __name__ == "__main__":

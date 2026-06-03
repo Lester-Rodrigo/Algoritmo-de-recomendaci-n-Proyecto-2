@@ -52,3 +52,48 @@ bannerUpload.addEventListener("change", function(){
     reader.readAsDataURL(file);
 
 });
+
+const games =
+    JSON.parse(
+        localStorage.getItem(
+            "recommendedGames"
+        )
+    );
+
+if (games) {
+
+    const container =
+        document.getElementById(
+            "games-container"
+        );
+
+    games.forEach(game => {
+
+        const card =
+            document.createElement("div");
+
+        card.classList.add(
+            "game-card"
+        );
+
+        const imageUrl =
+            `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg`;
+
+        card.innerHTML = `
+            <img
+                src="${imageUrl}"
+                alt="${game.game}"
+                class="game-image"
+            >
+
+            <h4>${game.game}</h4>
+
+            <p>Match Score: ${game.score}</p>
+
+            <p>$${game.price}</p>
+        `;
+
+        container.appendChild(card);
+
+    });
+}

@@ -159,6 +159,21 @@ class SteamGraphDB:
                     username=username,
                 )
             )
+            
+    def add_user_genres(self, username: str, genres: list):
+
+        with self.driver.session() as session:
+
+            for genre in genres:
+
+                session.run("""
+                    MATCH (u:User {name: $username})
+
+                    MERGE (g:Genre {name: $genre})
+
+                    MERGE (u)-[:LIKES]->(g) """,
+                username=username,
+                genre=genre)
 
     def user_exists_in_graph(self, username: str) -> bool:
         with self.driver.session() as session:
@@ -339,3 +354,47 @@ class SteamGraphDB:
             key=lambda x: x.get("similarity", 0) + x.get("score", 0),
             reverse=True
         )[:10]
+        
+    def expanded_recommendations(self,username: str,limit: int = 5):
+        with self.driver.session() as session:
+            result = session.run("""
+                MATCH
+                    (u:User {name:$username})-[:LIKES]->(g:Genre)
+                MATCH
+                    (seed:Game)-[:HAS_GENRE]->(g)
+                OPTIONAL MATCH
+                    (seed)-[s:SIMILAR]->(rec:Game)
+                RETURN
+                    COALESCE(rec.appid,seed.appid) AS appid,
+                    COALESCE( rec.name,seed.name) AS game,
+                    COALESCE(rec.price,seed.price) AS price,
+                    SUM(COALESCE(s.score,1)) AS score
+                ORDER BY score DESC
+                LIMIT $limit
+            """,
+            username=username,
+            limit=limit)
+            return [dict(r) for r in result]
+        
+    def genre_based_recommendations(self, username: str, limit: int = 5):
+        with self.driver.session() as session:
+            result = session.run("""
+                MATCH
+                    (u:User {name:$username})-[:LIKES]->(g:Genre)
+                MATCH
+                    (game:Game)-[:HAS_GENRE]->(g)
+                OPTIONAL MATCH
+                    (game)-[:HAS_TAG]->(t:Tag)
+                RETURN
+                    game.appid AS appid,
+                    game.name AS game,
+                    game.price AS price,
+                    COUNT(DISTINCT g) +
+                    COUNT(DISTINCT t)*0.3
+                        AS score
+                ORDER BY score DESC
+                LIMIT $limit
+            """,
+            username=username,
+            limit=limit)
+            return [dict(r) for r in result]
