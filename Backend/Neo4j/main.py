@@ -23,7 +23,7 @@ SQLITE_PATH    = BASE_DIR / os.getenv("SQLITE_PATH", "../data/users.db")
 STEAM_CSV      = BASE_DIR / os.getenv("STEAM_CSV",   "../data/steam.csv")
 MEDIA_CSV      = BASE_DIR / os.getenv("MEDIA_CSV",   "../data/steam_media_data.csv")
 DESC_CSV       = BASE_DIR / os.getenv("DESC_CSV",    "../data/steam_description_data.csv")
-IMPORT_LIMIT   = int(os.getenv("IMPORT_LIMIT", "100"))
+IMPORT_LIMIT   = int(os.getenv("IMPORT_LIMIT", "1000"))
 FORCE_IMPORT   = os.getenv("FORCE_IMPORT", "False") == "True"
 
 # SQLITE

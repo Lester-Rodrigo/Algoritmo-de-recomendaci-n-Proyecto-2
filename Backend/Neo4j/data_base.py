@@ -389,8 +389,9 @@ class SteamGraphDB:
             """)
             games = {r["appid"]: dict(r) for r in rows}
 
-        pairs = list(combinations(games.keys(), 2))
-        total = len(pairs)
+        pairs = combinations(games.keys(), 2)
+        n = len(games)
+        total = n * (n - 1) // 2
         similar = 0
 
         with self.driver.session() as session:
@@ -430,36 +431,36 @@ class SteamGraphDB:
     # RECOMMENDATIONS ///////////////////////////////////////////
 
     def content_based_recommendations(self, username: str):
-        with self.driver.session() as session:
-            result = session.run("""
-                MATCH (u:User {name: $username})
-                OPTIONAL MATCH (u)-[:RATED]->(rated:Game)
-                OPTIONAL MATCH (u)-[:LIKED]->(liked:Game)
-                WITH u, collect(DISTINCT rated) + collect(DISTINCT liked) AS seeds
-                UNWIND seeds AS seed
-                MATCH (seed)-[s:SIMILAR]->(rec:Game)
-                WHERE NOT (u)-[:RATED]->(rec)
-                  AND NOT (u)-[:LIKED]->(rec)
-                  AND NOT (u)-[:DISLIKED]->(rec)
-                RETURN rec.appid AS appid, rec.name AS game,
-                       rec.price AS price, AVG(s.score) AS similarity
-                ORDER BY similarity DESC LIMIT 10
-            """, username=username)
-            recs = [dict(r) for r in result]
-
-            if not recs:
+            with self.driver.session() as session:
                 result = session.run("""
-                    MATCH (u:User {name: $username})-[:LIKES]->(ge:Genre)
-                    MATCH (g:Game)-[:HAS_GENRE]->(ge)
-                    WHERE NOT (u)-[:DISLIKED]->(g)
-                    RETURN g.appid AS appid, g.name AS game,
-                           g.price AS price, 0.5 AS similarity,
-                           g.positive_ratings AS pos
-                    ORDER BY pos DESC LIMIT 10
+                    MATCH (u:User {name: $username})
+                    OPTIONAL MATCH (u)-[:RATED]->(rated:Game)
+                    OPTIONAL MATCH (u)-[:LIKED]->(liked:Game)
+                    WITH u, collect(DISTINCT rated) + collect(DISTINCT liked) AS seeds
+                    UNWIND seeds AS seed
+                    MATCH (seed)-[s:SIMILAR]->(rec:Game)
+                    WHERE NOT (u)-[:RATED]->(rec)
+                    AND NOT (u)-[:LIKED]->(rec)
+                    AND NOT (u)-[:DISLIKED]->(rec)
+                    RETURN rec.appid AS appid, rec.name AS game,
+                        rec.price AS price, AVG(s.score) AS similarity
+                    ORDER BY similarity DESC LIMIT 10
                 """, username=username)
                 recs = [dict(r) for r in result]
 
-            return recs
+                if not recs:
+                    result = session.run("""
+                        MATCH (u:User {name: $username})-[:LIKES]->(ge:Genre)
+                        MATCH (g:Game)-[:HAS_GENRE]->(ge)
+                        WHERE NOT (u)-[:DISLIKED]->(g)
+                        RETURN g.appid AS appid, g.name AS game,
+                            g.price AS price, 0.5 AS similarity,
+                            g.positive_ratings AS pos
+                        ORDER BY pos DESC LIMIT 10
+                    """, username=username)
+                    recs = [dict(r) for r in result]
+
+                return recs
 
     def collaborative_filtering(self, username: str):
         with self.driver.session() as session:
